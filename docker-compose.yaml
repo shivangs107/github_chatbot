@@ -1,0 +1,44 @@
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - SERVICE_TYPE=api
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=github_faq_chatbot
+      - MONGO_COLLECTION=logs
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app/data:/app/app/data 
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  bot:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - SERVICE_TYPE=bot
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - API_URL=http://api:8000/query
+    depends_on:
+      api:
+        condition: service_started
+
+  mongo:
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 30s
+      retries: 3
+
+volumes:
+  mongo_data:
