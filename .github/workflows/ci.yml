@@ -12,9 +12,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: List Python files
-      run: find . -name "*.py" | xargs ls -la
-    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -25,11 +22,30 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
-    - name: Run linting (warning only)
-      continue-on-error: true
+    - name: Run linting
       run: |
         pip install black flake8
-        echo "Black formatting check:"
-        black --check . || echo "⚠️ Black formatting issues found"
-        echo "Flake8 style check:"
-        flake8 . || echo "⚠️ Flake8 style issues found"
+        black --check .
+        flake8 .
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build API service
+      run: docker build -t github-faq-api --target api .
+    
+    - name: Build Bot service
+      run: docker build -t github-faq-bot --target bot .
+    
+    - name: Verify containers can start
+      run: |
+        docker run -d -e SERVICE_TYPE=api -e MONGO_URI=mongodb://dummy -e MONGO_DB=test -e MONGO_COLLECTION=test --name test-api github-faq-api
+        sleep 5
+        docker ps | grep test-api
+        docker stop test-api && docker rm test-api
