@@ -26,6 +26,7 @@ show collections
 db.conversations.find().pretty()
 db.users.find().pretty()
 db.analytics.find().pretty()
+db.logs.find().pretty()
 for  deletion:
 db.conversations.deleteMany({})
 db.logs.deleteMany({})
